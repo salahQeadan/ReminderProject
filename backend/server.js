@@ -33,39 +33,41 @@ const User = mongoose.model('User', userSchema);
 
 const reminderSchema = new mongoose.Schema({
   userId: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'User',
-    required: true
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+      required: true
   },
   text: {
-    type: String,
-    required: true
+      type: String,
+      required: true
   },
   date: {
-    type: Date,
-    default: Date.now
+      type: Date,
+      default: Date.now
+  },
+  priority: {
+      type: String,
+      enum: ['Low', 'Medium', 'High'],
+      default: 'Medium'
   }
 });
 
 const Reminder = mongoose.model('Reminder', reminderSchema);
 
-// Routes
+
 
 // Register a new user
 app.post('/api/register', async (req, res) => {
   const { name, email, password } = req.body;
 
   try {
-    // Check if the user already exists
     const existingUser = await User.findOne({ email });
     if (existingUser) {
       return res.status(400).json({ message: 'User already exists' });
     }
 
-    // Hash the password
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // Create a new user
     const newUser = new User({ name, email, password: hashedPassword });
     await newUser.save();
 
@@ -79,13 +81,11 @@ app.post('/api/login', async (req, res) => {
   const { email, password } = req.body;
 
   try {
-      // Check if the user exists
       const user = await User.findOne({ email });
       if (!user) {
           return res.status(400).json({ message: 'Invalid email or password' });
       }
 
-      // Compare the password
       const isMatch = await bcrypt.compare(password, user.password);
       if (!isMatch) {
           return res.status(400).json({ message: 'Invalid email or password' });
@@ -98,16 +98,16 @@ app.post('/api/login', async (req, res) => {
 });
 
 app.post('/api/reminders', async (req, res) => {
-  const { userId, text } = req.body;
+  const { userId, text, priority } = req.body;
   try {
-    const newReminder = new Reminder({ userId, text });
-    await newReminder.save();
-    res.status(201).json(newReminder);
+      const newReminder = new Reminder({ userId, text, priority });
+      await newReminder.save();
+      res.status(201).json(newReminder);
   } catch (error) {
-    console.error('Error adding reminder:', error); // Log the error
-    res.status(500).json({ message: 'Failed to add reminder', error });
+      res.status(500).json({ message: 'Failed to add reminder', error: error.message });
   }
 });
+
 
 app.get('/api/reminders/:userId', async (req, res) => {
   const { userId } = req.params;
@@ -119,6 +119,49 @@ app.get('/api/reminders/:userId', async (req, res) => {
     res.status(500).json({ message: 'Failed to get reminders', error });
   }
 });
+
+
+// Update a reminder
+app.put('/api/reminders/:id', async (req, res) => {
+  const { id } = req.params;
+  const { text, priority } = req.body;
+
+  try {
+      const updatedReminder = await Reminder.findByIdAndUpdate(
+          id,
+          { text, priority },
+          { new: true } // This option returns the updated document
+      );
+
+      if (!updatedReminder) {
+          return res.status(404).json({ message: 'Reminder not found' });
+      }
+
+      res.status(200).json(updatedReminder);
+  } catch (error) {
+      res.status(500).json({ message: 'Failed to update reminder', error: error.message });
+  }
+});
+
+
+
+// Delete a reminder
+app.delete('/api/reminders/:id', async (req, res) => {
+  const { id } = req.params;
+
+  try {
+      const deletedReminder = await Reminder.findByIdAndDelete(id);
+
+      if (!deletedReminder) {
+          return res.status(404).json({ message: 'Reminder not found' });
+      }
+
+      res.status(200).json({ message: 'Reminder deleted successfully' });
+  } catch (error) {
+      res.status(500).json({ message: 'Failed to delete reminder', error: error.message });
+  }
+});
+
 
 
 // Start the server
