@@ -104,7 +104,7 @@ const Home = () => {
   };
 
   const decreaseFontSize = () => {
-    setFontSize((prevFontSize) => Math.max(prevFontSize - 2, 10)); // Minimum font size is 10px
+    setFontSize((prevFontSize) => Math.max(prevFontSize - 2, 10));
   };
 
   const toggleHighContrast = () => {
