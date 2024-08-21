@@ -182,6 +182,7 @@ app.post('/api/reminders', async (req, res) => {
   }
 });
 
+
 // Get reminders for a user
 app.get('/api/reminders/:userId', async (req, res) => {
   const { userId } = req.params;
